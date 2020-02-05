@@ -1,0 +1,226 @@
+Mongodb version : 3-2
+Linux version : Ubuntu 16-04
+
+1 - Import the public key used by the package management system
+
+wget -qO - https://www.mongodb.org/static/pgp/server-3.2.asc | sudo apt-key add -
+
+2 - Create a list file for MongoDB
+
+echo "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list
+
+
+3 - Reload local package databasesudo apt-get update
+
+sudo apt-get update
+
+4 - Install the MongoDB packages
+
+sudo apt-get install -y mongodb-org
+
+Install a specific release of MongoDB
+
+sudo apt-get install -y mongodb-org=3.2.22 mongodb-org-server=3.2.22 mongodb-org-shell=3.2.22 mongodb-org-mongos=3.2.22 mongodb-org-tools=3.2.22
+
+
+5 - stop mongod instance
+sudo service mongod start
+
+6 - edit config files  /etc/mongod.conf , please change the port for each instance
+
+mongodb1.conf
+
+================================================================================================
+
+# mongod.conf                                                               
+
+# Where and how to store data.                                              
+storage:                                                                    
+  dbPath: /var/lib/mongodb/db1                                                  
+  journal:                                                                  
+    enabled: true                                                           
+                                                         
+ 
+# where to write logging data.                                              
+systemLog:                                                                  
+  destination: file                                                         
+  logAppend: true                                                           
+  path: /var/log/mongodb/mongod1.log                                         
+ 
+# network interfaces                                                        
+net:                   
+  #bindIp: 127.0.0.1 - Important to comment this line
+  port: 27017                                                               
+                                                     
+  
+#replication:                                                               
+replication:                                                                
+   oplogSizeMB: 1                                                           
+   replSetName: rs0                                                         
+
+================================================================================================
+
+mongod2.conf
+
+================================================================================================
+
+
+# mongod.conf                                                               
+
+# Where and how to store data.                                              
+storage:                                                                    
+  dbPath: /var/lib/mongodb/db2                                                  
+  journal:                                                                  
+    enabled: true                                                           
+                                                         
+ 
+# where to write logging data.                                              
+systemLog:                                                                  
+  destination: file                                                         
+  logAppend: true                                                           
+  path: /var/log/mongodb/mongod2.log                                         
+ 
+# network interfaces                                                        
+net:                   
+  #bindIp: 127.0.0.1 - Important to comment this line
+  port: 27018                                                               
+                                                     
+  
+#replication:                                                               
+replication:                                                                
+   oplogSizeMB: 1                                                           
+   replSetName: rs0   
+
+================================================================================================
+
+mongod3.conf
+
+================================================================================================
+
+
+# mongod.conf                                                               
+
+# Where and how to store data.                                              
+storage:                                                                    
+  dbPath: /var/lib/mongodb/db3                                                  
+  journal:                                                                  
+    enabled: true                                                           
+                                                         
+ 
+# where to write logging data.                                              
+systemLog:                                                                  
+  destination: file                                                         
+  logAppend: true                                                           
+  path: /var/log/mongodb/mongod3.log                                         
+ 
+# network interfaces                                                        
+net:                   
+  #bindIp: 127.0.0.1 - Important to comment this line
+  port: 27019                                                               
+                                                     
+  
+#replication:                                                               
+replication:                                                                
+   oplogSizeMB: 1                                                           
+   replSetName: rs0   
+   
+
+================================================================================================
+
+
+7 - Create the data path with proper owner
+cd /var/lib/mongodb
+sudo mkdir db1 db2 db3
+sudo chown mongodb:mongodb db1 db2 db3
+
+
+8 - start the all instances
+
+sudo mongod --config /etc/mongod1.conf --fork
+sudo mongod --config /etc/mongod2.conf --fork
+sudo mongod --config /etc/mongod3.conf --fork
+
+9 - login to fisrt instances and initiate the replica set
+
+mongo --port 27017
+rs.initiate()
+
+10 - add other instances into replica set
+
+rs.add("ip-172-31-33-115:27018")
+rs.add("ip-172-31-33-115:27019")
+
+11 - check the replica status : 
+
+
+rs0:PRIMARY> rs.status()
+{
+        "set" : "rs0",
+        "date" : ISODate("2020-02-05T22:43:58.703Z"),
+        "myState" : 1,
+        "term" : NumberLong(1),
+        "heartbeatIntervalMillis" : NumberLong(2000),
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "ip-172-31-33-115:27017",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 1678,
+                        "optime" : {
+                                "ts" : Timestamp(1580941294, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2020-02-05T22:21:34Z"),
+                        "electionTime" : Timestamp(1580941039, 2),
+                        "electionDate" : ISODate("2020-02-05T22:17:19Z"),
+                        "configVersion" : 3,
+                        "self" : true
+                },
+                {
+                        "_id" : 1,
+                        "name" : "ip-172-31-33-115:27018",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 1349,
+                        "optime" : {
+                                "ts" : Timestamp(1580941294, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2020-02-05T22:21:34Z"),
+                        "lastHeartbeat" : ISODate("2020-02-05T22:43:57.163Z"),
+                        "lastHeartbeatRecv" : ISODate("2020-02-05T22:43:58.035Z"),
+                        "pingMs" : NumberLong(0),
+                        "syncingTo" : "ip-172-31-33-115:27017",
+                        "configVersion" : 3
+                },
+                {
+                        "_id" : 2,
+                        "name" : "ip-172-31-33-115:27019",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 1344,
+                        "optime" : {
+                                "ts" : Timestamp(1580941294, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2020-02-05T22:21:34Z"),
+                        "lastHeartbeat" : ISODate("2020-02-05T22:43:57.163Z"),
+                        "lastHeartbeatRecv" : ISODate("2020-02-05T22:43:57.974Z"),
+                        "pingMs" : NumberLong(0),
+                        "syncingTo" : "ip-172-31-33-115:27017",
+                        "configVersion" : 3
+                }
+        ],
+        "ok" : 1
+}
+rs0:PRIMARY>
+
+
+
+
+
+
