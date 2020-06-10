@@ -1,0 +1,333 @@
+Operating System : Ubuntu 18.04
+MongoDB Version : 3.6
+Environment: AWS EC2 instances
+Security Group : SSH and 27017 port allowed
+
+
+
+node1: 
+
+ubuntu@ip-172-31-44-79:~$ wget -qO - https://www.mongodb.org/static/pgp/server-3.6.asc | sudo apt-key add -
+OK
+ubuntu@ip-172-31-44-79:~$
+
+
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+
+sudo apt-get update
+
+sudo apt install -y mongodb-org
+
+sudo systemctl stop mongod.service
+sudo systemctl start mongod.service
+sudo systemctl enable mongod.service
+
+sudo systemctl status mongod
+
+sudo service mongod stop
+
+
+
+
+
+
+
+
+
+
+node2: 
+
+
+
+ubuntu@ip-172-31-39-60:~$ wget -qO - https://www.mongodb.org/static/pgp/server-3.6.asc | sudo apt-key add -
+OK
+ubuntu@ip-172-31-39-60:~$
+
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+
+
+sudo apt-get update
+
+sudo apt install -y mongodb-org
+
+sudo systemctl stop mongod.service
+sudo systemctl start mongod.service
+sudo systemctl enable mongod.service
+
+
+sudo systemctl status mongod
+
+sudo service mongod stop
+
+
+
+
+
+
+
+
+
+
+
+
+
+node3:
+
+
+ubuntu@ip-172-31-47-141:~$ wget -qO - https://www.mongodb.org/static/pgp/server-3.6.asc | sudo apt-key add -
+OK
+ubuntu@ip-172-31-47-141:~$
+
+
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+
+sudo apt-get update
+
+sudo apt install -y mongodb-org
+
+
+sudo systemctl stop mongod.service
+sudo systemctl start mongod.service
+sudo systemctl enable mongod.service
+
+
+sudo systemctl status mongod
+
+sudo service mongod stop
+
+
+
+
+
+
+update all config file for bindIpAll : true and replica set 
+
+# mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# Where and how to store data.
+storage:
+  dbPath: /var/lib/mongodb
+  journal:
+    enabled: true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# where to write logging data.
+systemLog:
+  destination: file
+  logAppend: true
+  path: /var/log/mongodb/mongod.log
+
+# network interfaces
+net:
+  port: 27017
+  bindIpAll: true
+
+
+# how the process runs
+processManagement:
+  timeZoneInfo: /usr/share/zoneinfo
+
+#security:
+
+#operationProfiling:
+
+#replication:
+replication:
+  oplogSizeMB: 1
+  replSetName: rs0
+
+
+ 
+
+
+on the first node: 
+
+ubuntu@ip-172-31-44-79:/etc$
+ubuntu@ip-172-31-44-79:/etc$ sudo service mongod start
+ubuntu@ip-172-31-44-79:/etc$ mongo
+MongoDB shell version v3.6.18
+connecting to: mongodb://127.0.0.1:27017/?gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("d9546c81-0f90-43ce-aaa7-9f5fbb640d2a") }
+MongoDB server version: 3.6.18
+Server has startup warnings:
+2020-06-10T16:45:26.331+0000 I STORAGE  [initandlisten]
+2020-06-10T16:45:26.331+0000 I STORAGE  [initandlisten] ** WARNING: Using the XFS filesystem is strongly recommended with the WiredTiger storage engine
+2020-06-10T16:45:26.331+0000 I STORAGE  [initandlisten] **          See http://dochub.mongodb.org/core/prodnotes-filesystem
+2020-06-10T16:45:27.431+0000 I CONTROL  [initandlisten]
+2020-06-10T16:45:27.431+0000 I CONTROL  [initandlisten] ** WARNING: Access control is not enabled for the database.
+2020-06-10T16:45:27.431+0000 I CONTROL  [initandlisten] **          Read and write access to data and configuration is unrestricted.
+2020-06-10T16:45:27.431+0000 I CONTROL  [initandlisten]
+> rs.initiate()
+{
+        "info2" : "no configuration specified. Using a default configuration for the set",
+        "me" : "ip-172-31-44-79:27017",
+        "ok" : 1,
+        "operationTime" : Timestamp(1591807611, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1591807611, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+rs0:SECONDARY>
+rs0:PRIMARY>
+
+
+rs0:PRIMARY> rs.add("ip-172-31-47-141:27017")
+{
+        "ok" : 1,
+        "operationTime" : Timestamp(1591807854, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1591807854, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+
+
+rs0:PRIMARY> rs.add("ip-172-31-39-60:27017")
+{
+        "ok" : 1,
+        "operationTime" : Timestamp(1591807893, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1591807893, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+
+
+
+rs0:PRIMARY> rs.status()
+{
+        "set" : "rs0",
+        "date" : ISODate("2020-06-10T16:51:36.431Z"),
+        "myState" : 1,
+        "term" : NumberLong(1),
+        "syncingTo" : "",
+        "syncSourceHost" : "",
+        "syncSourceId" : -1,
+        "heartbeatIntervalMillis" : NumberLong(2000),
+        "optimes" : {
+                "lastCommittedOpTime" : {
+                        "ts" : Timestamp(1591807893, 1),
+                        "t" : NumberLong(1)
+                },
+                "readConcernMajorityOpTime" : {
+                        "ts" : Timestamp(1591807893, 1),
+                        "t" : NumberLong(1)
+                },
+                "appliedOpTime" : {
+                        "ts" : Timestamp(1591807893, 1),
+                        "t" : NumberLong(1)
+                },
+                "durableOpTime" : {
+                        "ts" : Timestamp(1591807893, 1),
+                        "t" : NumberLong(1)
+                }
+        },
+        "members" : [
+                {
+                        "_id" : 0,
+                        "name" : "ip-172-31-44-79:27017",
+                        "health" : 1,
+                        "state" : 1,
+                        "stateStr" : "PRIMARY",
+                        "uptime" : 370,
+                        "optime" : {
+                                "ts" : Timestamp(1591807893, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2020-06-10T16:51:33Z"),
+                        "syncingTo" : "",
+                        "syncSourceHost" : "",
+                        "syncSourceId" : -1,
+                        "infoMessage" : "",
+                        "electionTime" : Timestamp(1591807611, 2),
+                        "electionDate" : ISODate("2020-06-10T16:46:51Z"),
+                        "configVersion" : 3,
+                        "self" : true,
+                        "lastHeartbeatMessage" : ""
+                },
+                {
+                        "_id" : 1,
+                        "name" : "ip-172-31-47-141:27017",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 42,
+                        "optime" : {
+                                "ts" : Timestamp(1591807893, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1591807893, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2020-06-10T16:51:33Z"),
+                        "optimeDurableDate" : ISODate("2020-06-10T16:51:33Z"),
+                        "lastHeartbeat" : ISODate("2020-06-10T16:51:35.235Z"),
+                        "lastHeartbeatRecv" : ISODate("2020-06-10T16:51:36.247Z"),
+                        "pingMs" : NumberLong(0),
+                        "lastHeartbeatMessage" : "",
+                        "syncingTo" : "",
+                        "syncSourceHost" : "",
+                        "syncSourceId" : -1,
+                        "infoMessage" : "",
+                        "configVersion" : 3
+                },
+                {
+                        "_id" : 2,
+                        "name" : "ip-172-31-39-60:27017",
+                        "health" : 1,
+                        "state" : 2,
+                        "stateStr" : "SECONDARY",
+                        "uptime" : 3,
+                        "optime" : {
+                                "ts" : Timestamp(1591807893, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDurable" : {
+                                "ts" : Timestamp(1591807893, 1),
+                                "t" : NumberLong(1)
+                        },
+                        "optimeDate" : ISODate("2020-06-10T16:51:33Z"),
+                        "optimeDurableDate" : ISODate("2020-06-10T16:51:33Z"),
+                        "lastHeartbeat" : ISODate("2020-06-10T16:51:35.260Z"),
+                        "lastHeartbeatRecv" : ISODate("2020-06-10T16:51:36.262Z"),
+                        "pingMs" : NumberLong(0),
+                        "lastHeartbeatMessage" : "",
+                        "syncingTo" : "",
+                        "syncSourceHost" : "",
+                        "syncSourceId" : -1,
+                        "infoMessage" : "",
+                        "configVersion" : 3
+                }
+        ],
+        "ok" : 1,
+        "operationTime" : Timestamp(1591807893, 1),
+        "$clusterTime" : {
+                "clusterTime" : Timestamp(1591807893, 1),
+                "signature" : {
+                        "hash" : BinData(0,"AAAAAAAAAAAAAAAAAAAAAAAAAAA="),
+                        "keyId" : NumberLong(0)
+                }
+        }
+}
+rs0:PRIMARY>
+
+
+
+
+
