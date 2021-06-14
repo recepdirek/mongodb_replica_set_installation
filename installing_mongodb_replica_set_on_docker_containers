@@ -25,3 +25,10 @@ rs.add("mongo3:27017")
 #check if the replication is working
 rs.status()
 
+
+
+#note:  in order to have persistent database, you need to create docker volume
+docker volume create --name mongo_storage
+docker run -d -p 30001:27017 --name mongo1 -v mongo_store:/data --net my-mongo-cluster mongo mongod --replSet my-mongo-set
+docker run -d -p 30002:27017 --name mongo2 -v mongo_store:/data --net my-mongo-cluster mongo mongod --replSet my-mongo-set
+docker run -d -p 30003:27017 --name mongo3 -v mongo_store:/data --net my-mongo-cluster mongo mongod --replSet my-mongo-set
