@@ -1,0 +1,27 @@
+#docker must be installed
+docker -v
+
+#getting the latest mongodb official image
+docker pull mongo
+
+#create a network for cluster
+docker network create my-mongo-cluster
+
+#run 3 separate mongodb contrainers
+docker run -d -p 30001:27017 --name mongo1 --net my-mongo-cluster mongo mongod --replSet my-mongo-set
+docker run -d -p 30002:27017 --name mongo2 --net my-mongo-cluster mongo mongod --replSet my-mongo-set
+docker run -d -p 30003:27017 --name mongo3 --net my-mongo-cluster mongo mongod --replSet my-mongo-set
+
+#login to the one of the node
+docker exec -it mongo1 mongo
+
+#initiate the replicaset (node will become primary)
+rs.initiate()
+
+#add other nodes into replicaset (run on the primary node)
+rs.add("mongo2:27017")
+rs.add("mongo3:27017")
+
+#check if the replication is working
+rs.status()
+
